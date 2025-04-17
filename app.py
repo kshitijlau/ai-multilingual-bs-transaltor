@@ -9,10 +9,11 @@ st.set_page_config(page_title="Multilingual Translator", layout="wide")
 st.title("🌍 AI-Powered Multilingual Simulation Translator")
 
 # Azure OpenAI credentials via Streamlit secrets
-openai.api_type = "azure"
-openai.api_key = st.secrets["AZURE_OPENAI_API_KEY"]
-openai.api_base = st.secrets["AZURE_OPENAI_ENDPOINT"]
-openai.api_version = "2024-08-01-preview"
+client = AzureOpenAI(
+    api_key=st.secrets["AZURE_OPENAI_API_KEY"],
+    api_version="2024-08-01-preview",
+    azure_endpoint=st.secrets["AZURE_OPENAI_ENDPOINT"]
+)
 
 DEPLOYMENT_NAME = st.secrets["AZURE_DEPLOYMENT_NAME"]
 
