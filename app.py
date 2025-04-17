@@ -42,8 +42,8 @@ if uploaded_file:
                     prompt = row[col_name]
                     if pd.notna(prompt):
                         try:
-                            response = openai.ChatCompletion.create(
-                                engine=DEPLOYMENT_NAME,
+                            response = openai.chat.completions.create(
+                                model=DEPLOYMENT_NAME,
                                 messages=[
                                     {"role": "system", "content": "You are a culturally-aware professional business content translator."},
                                     {"role": "user", "content": prompt}
