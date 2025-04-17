@@ -48,20 +48,26 @@ if uploaded_file:
                 for i, row in df.iterrows():
                     prompt = row[col_name]
                     if pd.notna(prompt):
-                        try:
-                            response = openai.chat.completions.create(
-                                model=DEPLOYMENT_NAME,
-                                messages=[
-                                    {"role": "system", "content": "You are a culturally-aware professional business content translator."},
-                                    {"role": "user", "content": prompt}
-                                ],
-                                temperature=0.5,
-                                max_tokens=1000
-                            )
-                            df.at[i, result_col] = response.choices[0].message.content.strip()
-                            time.sleep(0.5)  # reduced delay
-                        except Exception as e:
-                            df.at[i, result_col] = f"[ERROR] {str(e)}"
+                        for attempt in range(3):
+                            try:
+                                response = openai.chat.completions.create(
+                                    model=DEPLOYMENT_NAME,
+                                    messages=[
+                                        {"role": "system", "content": "You are a culturally-aware professional business content translator."},
+                                        {"role": "user", "content": prompt}
+                                    ],
+                                    temperature=0.5,
+                                    max_tokens=1000
+                                )
+                                df.at[i, result_col] = response.choices[0].message.content.strip()
+                                break  # success, exit retry loop
+                            except Exception as e:
+                                if attempt < 2:
+                                    time.sleep(2)  # wait before retry
+                                else:
+                                    df.at[i, result_col] = f"[ERROR] {str(e)}"
+
+                        time.sleep(0.5)  # throttle to avoid rate limit
 
                     task_count += 1
                     elapsed = time.time() - start_time
@@ -74,14 +80,15 @@ if uploaded_file:
             st.success("✅ Translations completed!")
             st.dataframe(df.head(10))
 
-            # Download
-            buffer = BytesIO()
-            df.to_excel(buffer, index=False, engine="openpyxl")
-            buffer.seek(0)
+            # Safe Excel export using ExcelWriter
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False)
+            output.seek(0)
 
             st.download_button(
                 label="📥 Download Translated Excel",
-                data=buffer,
+                data=output,
                 file_name="translated_simulation.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
