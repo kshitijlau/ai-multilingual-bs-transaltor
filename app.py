@@ -3,6 +3,7 @@ import pandas as pd
 import openai
 from io import BytesIO
 import time
+from datetime import timedelta
 
 # Streamlit config
 st.set_page_config(page_title="Multilingual Translator", layout="wide")
@@ -33,6 +34,12 @@ if uploaded_file:
 
     if st.button("⚙️ Run Translations"):
         with st.spinner("Running translations, please wait..."):
+            total_tasks = len(df) * len(selected_langs)
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            start_time = time.time()
+            task_count = 0
+
             for lang in selected_langs:
                 col_name = f"Prompt - English to {lang}"
                 result_col = f"Translation - {lang}"
@@ -52,9 +59,17 @@ if uploaded_file:
                                 max_tokens=1000
                             )
                             df.at[i, result_col] = response.choices[0].message.content.strip()
-                            time.sleep(1.5)  # prevent rate limits
+                            time.sleep(0.5)  # reduced delay
                         except Exception as e:
                             df.at[i, result_col] = f"[ERROR] {str(e)}"
+
+                    task_count += 1
+                    elapsed = time.time() - start_time
+                    rate = elapsed / task_count if task_count else 1
+                    remaining = total_tasks - task_count
+                    eta = timedelta(seconds=int(rate * remaining))
+                    progress_bar.progress(task_count / total_tasks)
+                    status_text.text(f"Completed {task_count} of {total_tasks} | ETA: {str(eta)}")
 
             st.success("✅ Translations completed!")
             st.dataframe(df.head(10))
