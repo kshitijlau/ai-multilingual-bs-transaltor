@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from openai import AzureOpenAI
+import openai
 from io import BytesIO
 import time
 
@@ -8,12 +8,11 @@ import time
 st.set_page_config(page_title="Multilingual Translator", layout="wide")
 st.title("🌍 AI-Powered Multilingual Simulation Translator")
 
-# Secret-based authentication
-client = AzureOpenAI(
-    api_key=st.secrets["AZURE_OPENAI_API_KEY"],
-    api_version="2024-08-01-preview",
-    azure_endpoint=st.secrets["AZURE_OPENAI_ENDPOINT"]
-)
+# Azure OpenAI credentials via Streamlit secrets
+openai.api_type = "azure"
+openai.api_key = st.secrets["AZURE_OPENAI_API_KEY"]
+openai.api_base = st.secrets["AZURE_OPENAI_ENDPOINT"]
+openai.api_version = "2024-08-01-preview"
 
 DEPLOYMENT_NAME = st.secrets["AZURE_DEPLOYMENT_NAME"]
 
@@ -43,8 +42,8 @@ if uploaded_file:
                     prompt = row[col_name]
                     if pd.notna(prompt):
                         try:
-                            response = client.chat.completions.create(
-                                model=DEPLOYMENT_NAME,
+                            response = openai.ChatCompletion.create(
+                                engine=DEPLOYMENT_NAME,
                                 messages=[
                                     {"role": "system", "content": "You are a culturally-aware professional business content translator."},
                                     {"role": "user", "content": prompt}
